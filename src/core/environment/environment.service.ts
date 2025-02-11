@@ -3,9 +3,6 @@ import {Exclude, Expose, plainToClass, Transform, Type} from "class-transformer"
 import {IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString, validateSync} from "class-validator";
 import {createWriteStream} from "fs";
 import {optionalStringToBoolean, stringToBoolean} from "src/shared/utils/class-transformer";
-import dotenv from "dotenv";
-
-dotenv.config();
 
 @Exclude()
 export class CoreEnvironment {
