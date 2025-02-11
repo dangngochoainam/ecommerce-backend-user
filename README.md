@@ -45,6 +45,19 @@ $ npm run start:dev
 $ npm run start:prod
 ```
 
+## Use migration
+
+```bash
+# generate file migration
+$ npm run typeorm:migration:user:generate name
+
+# run migrations
+$ npm run typeorm:migration:user:run
+
+# create file migration
+$ npm run typeorm:migration:user:create
+```
+
 ## Test
 
 ```bash

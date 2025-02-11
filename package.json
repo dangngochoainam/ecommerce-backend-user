@@ -17,7 +17,12 @@
 		"test:watch": "jest --watch",
 		"test:cov": "jest --coverage",
 		"test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-		"test:e2e": "jest --config ./test/jest-e2e.json"
+		"test:e2e": "jest --config ./test/jest-e2e.json",
+
+		"typeorm": "node --require tsconfig-paths/register --require ts-node/register ./node_modules/typeorm/cli.js",
+		"typeorm:migration:user:generate": "npm run build && npm run typeorm -- -d src/db-user/migrations/dataSource.ts migration:generate src/db-user/migrations/migration",
+		"typeorm:migration:user:run": "npm run typeorm migration:run -- -d src/db-user/migrations/dataSource.ts",
+		"typeorm:migration:user:create": "npm run typeorm -- migration:create src/db-user/migrations/migration"
 	},
 	"dependencies": {
 		"@nest-lab/throttler-storage-redis": "^1.0.0",

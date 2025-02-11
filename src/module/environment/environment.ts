@@ -11,7 +11,7 @@ export class UserEnvironment extends UserDBEnvironmentClass(CoreEnvironment) {
 export class UserEnvironmentService extends CoreEnvironmentService<UserEnvironment> {
 }
 
-export const RepaymentEnvironmentProvider: ValueProvider<UserEnvironmentService> = {
+export const UserEnvironmentProvider: ValueProvider<UserEnvironmentService> = {
     provide: UserEnvironmentService,
     useValue: new UserEnvironmentService(UserEnvironment),
 };
