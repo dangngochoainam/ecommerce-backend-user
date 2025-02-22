@@ -1,0 +1,10 @@
+export enum USER_SESSION {
+	USER = "USER",
+	PERMISSION = "PERMISSION",
+}
+
+export enum JWT_SESSION {
+	JWT_SESSION = "JWT_SESSION",
+}
+
+export type SESSION_TYPE = USER_SESSION | JWT_SESSION;
