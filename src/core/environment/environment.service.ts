@@ -165,20 +165,16 @@ export class CoreEnvironment {
     @Expose()
     public JWT_ISSUER: string = "CIMB";
 
-    @IsNumber()
-    @Type(() => Number)
-    @Expose()
-    public TOKEN_EXPIRE: number = 600; // seconds
 
     @IsNumber()
     @Type(() => Number)
     @Expose()
-    public TOKEN_LIFETIME = 1200000;
+    public TOKEN_LIFETIME = 60; // seconds
 
     @IsNumber()
     @Type(() => Number)
     @Expose()
-    public TOKEN_REFRESH_TIME_WINDOW = 30000;
+    public TOKEN_REFRESH_TIME_WINDOW = 300; // seconds
 }
 
 @Injectable()
