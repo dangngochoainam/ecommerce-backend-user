@@ -1,7 +1,8 @@
-import { DynamicModule, FactoryProvider, Module } from "@nestjs/common";
-import { CRYPTO_KEY_GETTER_PROVIDER, CryptoService, ICryptoKey } from "./crypto.service";
+import { DynamicModule, FactoryProvider, Global, Module } from "@nestjs/common";
 import { CryptoController } from "./crypto.controller";
+import { CRYPTO_KEY_GETTER_PROVIDER, CryptoService, ICryptoKey } from "./crypto.service";
 
+@Global()
 @Module({})
 export class CryptoModule {
 	public static register(options: Omit<FactoryProvider<ICryptoKey>, "provide">): DynamicModule {
