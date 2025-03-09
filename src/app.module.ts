@@ -20,6 +20,7 @@ import { readFileSync } from "fs";
 import { AuthGatewayModule } from "./core/auth-gateway/auth-gateway.module";
 import { AuthModule } from "./module/auth/auth.module";
 import { CryptoModule } from "./core/crypto/crypto.module";
+import { CryptoInterceptor } from "./core/crypto/crypto.interceptor";
 
 @Module({
 	imports: [
@@ -110,6 +111,10 @@ import { CryptoModule } from "./core/crypto/crypto.module";
 	controllers: [AppController],
 	providers: [
 		AppService,
+		{
+			provide: APP_INTERCEPTOR,
+			useClass: CryptoInterceptor,
+		},
 		{
 			provide: APP_INTERCEPTOR,
 			useClass: UserResponseInterceptor,
