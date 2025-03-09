@@ -1,6 +1,6 @@
 import { DynamicModule, FactoryProvider, Global, Module } from "@nestjs/common";
-import { FetchService, IFetchOptions } from "./fetch.service";
-import { LoggerService } from "src/core/logger/logger.service";
+import { FETCH_CONFIG_PROVIDER, FetchService, IFetchOptions } from "./fetch.service";
+import { FetchController } from "./fetch.controller";
 
 @Global()
 @Module({})
@@ -10,19 +10,14 @@ export class FetchModule {
 			module: FetchModule,
 			imports: [],
 			providers: [
+				FetchService,
 				{
-					provide: "options",
+					provide: FETCH_CONFIG_PROVIDER,
 					...opts,
 				},
-				{
-					provide: FetchService,
-					useFactory: (loggerService: LoggerService, opts: IFetchOptions) => {
-						return new FetchService(loggerService, opts);
-					},
-					inject: [LoggerService, "options"],
-				},
 			],
-			exports: [FetchService],
+			exports: [FetchService, FETCH_CONFIG_PROVIDER],
+			controllers: [FetchController],
 		};
 	}
 }
