@@ -1,25 +1,26 @@
+import { ThrottlerStorageRedisService } from "@nest-lab/throttler-storage-redis";
 import { Module } from "@nestjs/common";
 import { APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
+import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { TypeOrmModule, TypeOrmModuleOptions } from "@nestjs/typeorm";
+import { readFileSync } from "fs";
+import { Redis } from "ioredis";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
+import { AuthGatewayModule } from "./core/auth-gateway/auth-gateway.module";
+import { CryptoModule } from "./core/crypto/crypto.module";
 import { CoreEnvironment, CoreEnvironmentService } from "./core/environment/environment.service";
 import { CoreEnvironmentModule } from "./core/environment/evironment.module";
 import { DBLogger } from "./core/logger/db-logger";
 import { LoggerModule, SQL_LOGGER_PROVIDER } from "./core/logger/logger.module";
-import { typeOrmOptions as exampleTypeOrmOptions } from "./db-user/typeorm.module";
 import { LogDbModule } from "./db-log/db.module";
 import { SqlLoggerService } from "./db-log/module/sql-logger/sql-logger.service";
+import { typeOrmOptions as exampleTypeOrmOptions } from "./db-user/typeorm.module";
+import { AuthModule } from "./module/auth/auth.module";
 import { UserEnvironment } from "./module/environment/environment";
 import { UserResponseInterceptor } from "./module/interceptor/response.interceptor";
 import { UserModule } from "./module/user/user.module";
-import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
-import { ThrottlerStorageRedisService } from "@nest-lab/throttler-storage-redis";
-import { Redis } from "ioredis";
-import { readFileSync } from "fs";
-import { AuthGatewayModule } from "./core/auth-gateway/auth-gateway.module";
-import { AuthModule } from "./module/auth/auth.module";
-import { CryptoModule } from "./core/crypto/crypto.module";
+import { FetchModule } from "./core/fetch/fetch.module";
 import { CryptoInterceptor } from "./core/crypto/crypto.interceptor";
 
 @Module({
@@ -98,6 +99,14 @@ import { CryptoInterceptor } from "./core/crypto/crypto.interceptor";
 		}),
 		AuthGatewayModule,
 		AuthModule,
+		FetchModule.register({
+			useFactory: (env: CoreEnvironmentService<UserEnvironment>) => {
+				return {
+					targetHost: env.ENVIRONMENT.USER_HOST,
+				};
+			},
+			inject: [CoreEnvironmentService],
+		}),
 		CryptoModule.register({
 			useFactory: (env: CoreEnvironmentService<CoreEnvironment>) => {
 				return {
