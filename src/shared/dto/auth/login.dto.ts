@@ -1,12 +1,18 @@
 import { Exclude, Expose } from "class-transformer";
-import { IsString } from "class-validator";
+import { IsNotEmpty, IsString } from "class-validator";
 import { DTO, METHOD } from "../base.dto";
 
 @Exclude()
 export class LoginBodyDTO {
 	@Expose()
 	@IsString()
-	public userId!: string;
+	@IsNotEmpty()
+	public email!: string;
+
+	@Expose()
+	@IsString()
+	@IsNotEmpty()
+	public password!: string;
 }
 
 @Exclude()

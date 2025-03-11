@@ -1,7 +1,7 @@
 import { Exclude, Expose } from "class-transformer";
 import { BaseEntity } from "src/core/entity/base-entity";
 import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
-import {IsEmail} from "class-validator";
+import { IsEmail } from "class-validator";
 
 @Exclude()
 @Entity()
@@ -12,7 +12,7 @@ export class User extends BaseEntity {
 
 	@Expose()
 	@IsEmail()
-	@Column({ name: "email" })
+	@Column({ name: "email", unique: true })
 	public email!: string;
 
 	@Expose()
@@ -24,6 +24,6 @@ export class User extends BaseEntity {
 	public name!: string;
 
 	@Expose()
-	@Column({ name: "phone" })
+	@Column({ name: "phone", nullable: true })
 	public phone?: string;
 }
