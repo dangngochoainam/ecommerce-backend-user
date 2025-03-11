@@ -8,6 +8,7 @@ import { LoginBodyDTO, LoginDto, LoginResponseDTO } from "src/shared/dto/auth/lo
 import { LogoutDTO, LogoutResponseDTO } from "src/shared/dto/auth/logout.dto";
 import { RenewTokenBodyDTO, RenewTokenDto, RenewTokenResponseDTO } from "src/shared/dto/auth/renewToken.dto";
 import { AuthService } from "./auth.service";
+import { NON_ENCRYPTION } from "src/core/crypto/crypto.decorator";
 
 @Controller()
 export class AuthController {
@@ -19,6 +20,7 @@ export class AuthController {
 		this.logger = loggerService.newContextLogger(this.constructor.name);
 	}
 
+	 @NON_ENCRYPTION
 	@Post(LoginDto.url)
 	public async login(@Body() body: LoginBodyDTO): Promise<LoginResponseDTO> {
 		return this.authService.login(body);
@@ -31,6 +33,7 @@ export class AuthController {
 			allowSessions: [UserSession],
 		}),
 	)
+	@NON_ENCRYPTION
 	public logout(
 		@JWTContent() tokenPayload: WebJWTPayload,
 		@JWTSession(UserSession)
@@ -39,6 +42,7 @@ export class AuthController {
 		return this.authService.logout(tokenPayload);
 	}
 
+	@NON_ENCRYPTION
 	@Post(RenewTokenDto.url)
 	public async renewToken(@Body() body: RenewTokenBodyDTO): Promise<RenewTokenResponseDTO> {
 		return this.authService.renewToken(body);

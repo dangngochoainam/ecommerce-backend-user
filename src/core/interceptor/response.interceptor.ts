@@ -29,7 +29,6 @@ export class BaseResponseInterceptor<T, EXTRA_CODE extends string = SYSTEM_CODE>
     public intercept(context: ExecutionContext, next: CallHandler): Observable<ResponseDTO<T>> {
         const start = new Date();
 
-
         const req: Request = context.switchToHttp().getRequest();
         const res: Response = context.switchToHttp().getResponse();
 

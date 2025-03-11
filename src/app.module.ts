@@ -21,6 +21,7 @@ import { UserEnvironment } from "./module/environment/environment";
 import { UserResponseInterceptor } from "./module/interceptor/response.interceptor";
 import { UserModule } from "./module/user/user.module";
 import { FetchModule } from "./core/fetch/fetch.module";
+import { CryptoInterceptor } from "./core/crypto/crypto.interceptor";
 
 @Module({
 	imports: [
@@ -119,6 +120,10 @@ import { FetchModule } from "./core/fetch/fetch.module";
 	controllers: [AppController],
 	providers: [
 		AppService,
+		{
+			provide: APP_INTERCEPTOR,
+			useClass: CryptoInterceptor,
+		},
 		{
 			provide: APP_INTERCEPTOR,
 			useClass: UserResponseInterceptor,

@@ -16,6 +16,10 @@ async function bootstrap() {
         bodyParser: true,
         logger: new SqlLogger("[USER__SERVICE]"),
     });
+
+    // TODO: use Octet stream
+    // app.use(bodyParser.raw({type: "application/octet-stream"}));
+
     app.useLogger(new SqlLogger("USER__SERVICE", app.get(SQL_LOGGER_PROVIDER)));
 
     app.setGlobalPrefix(CoreEnvironmentProvider.useValue.ENVIRONMENT.APP_BASE_URL, {
