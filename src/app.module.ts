@@ -22,6 +22,7 @@ import { UserResponseInterceptor } from "./module/interceptor/response.intercept
 import { UserModule } from "./module/user/user.module";
 import { FetchModule } from "./core/fetch/fetch.module";
 import { CryptoInterceptor } from "./core/crypto/crypto.interceptor";
+import { SetTraceIdInterceptor } from "./core/interceptor/set-trace-id.interceptor";
 
 @Module({
 	imports: [
@@ -120,6 +121,10 @@ import { CryptoInterceptor } from "./core/crypto/crypto.interceptor";
 	controllers: [AppController],
 	providers: [
 		AppService,
+		{
+			provide: APP_INTERCEPTOR,
+			useClass: SetTraceIdInterceptor,
+		},
 		{
 			provide: APP_INTERCEPTOR,
 			useClass: CryptoInterceptor,

@@ -7,6 +7,7 @@ import { ContextLogger, LoggerService } from "../logger/logger.service";
 import { TOKEN_TYPE, TOKEN_TYPE_MAP } from "./auth-gateway.service";
 import { AuthSessionService, BaseJwtSession, SESSION_TYPE_MAP } from "./auth-session.service";
 import { TokenSessionService } from "./token-session.service";
+import { HEADER } from "src/shared/constants/http.constant";
 
 export function JwtGuard(params: {
 	allowTokens: Array<ClassConstructor<BaseJWTPayload>>;
@@ -27,10 +28,10 @@ export function JwtGuard(params: {
 			this.logger = loggerService.newContextLogger(this.constructor.name);
 		}
 		async canActivate(context: ExecutionContext): Promise<boolean> {
-			this.logger.debug({}, params);
+			const request = context.switchToHttp().getRequest();
+			const traceId = request.headers[HEADER.TRACE_ID] as string;
+			this.logger.debug({ traceId }, params);
 			try {
-				const request = context.switchToHttp().getRequest();
-
 				const token = request.headers.authorization;
 				if (!token) {
 					throw new UnauthorizedException(SYSTEM_CODE.UNAUTHORIZED);
@@ -48,12 +49,12 @@ export function JwtGuard(params: {
 
 				const tokenClass = TOKEN_TYPE_MAP[rawPayload.type];
 				if (!tokenClass) {
-					this.logger.error({}, "TOKEN TYPE NOT FOUND!", undefined);
+					this.logger.error({ traceId }, "TOKEN TYPE NOT FOUND!", undefined);
 					throw new UnauthorizedException(SYSTEM_CODE.UNAUTHORIZED);
 				}
 
 				if (allowTokens && !allowTokens.includes(tokenClass)) {
-					this.logger.error({}, "TOKEN TYPE NOT PERMIISION!", undefined);
+					this.logger.error({ traceId }, "TOKEN TYPE NOT PERMIISION!", undefined);
 					throw new UnauthorizedException(SYSTEM_CODE.UNAUTHORIZED);
 				}
 
@@ -67,11 +68,11 @@ export function JwtGuard(params: {
 					this.jwtService.verify(jwtToken);
 				}
 				if (content.exp && content.exp < Date.now() / 1000) {
-					this.logger.error({}, "TOKEN EXPIRED!", undefined);
+					this.logger.error({ traceId }, "TOKEN EXPIRED!", undefined);
 					throw new UnauthorizedException(SYSTEM_CODE.UNAUTHORIZED);
 				}
 				if (userFromToken.type !== content.type) {
-					this.logger.error({}, "TOKEN TYPE NOT MATCH!", undefined);
+					this.logger.error({ traceId }, "TOKEN TYPE NOT MATCH!", undefined);
 					throw new UnauthorizedException(SYSTEM_CODE.UNAUTHORIZED);
 				}
 
@@ -85,7 +86,7 @@ export function JwtGuard(params: {
 
 				const sessionClass = SESSION_TYPE_MAP[session.type];
 				if (allowSessions && !allowSessions.includes(sessionClass)) {
-					this.logger.error({}, "SESSION TYPE NOT PERMIISION!", undefined);
+					this.logger.error({ traceId }, "SESSION TYPE NOT PERMIISION!", undefined);
 					throw new UnauthorizedException(SYSTEM_CODE.UNAUTHORIZED);
 				}
 
@@ -94,7 +95,7 @@ export function JwtGuard(params: {
 				return true;
 			} catch (e: unknown) {
 				const { message } = e as Error;
-				this.logger.debug({}, message);
+				this.logger.debug({ traceId }, message);
 				throw new UnauthorizedException(SYSTEM_CODE.UNAUTHORIZED);
 			}
 		}
