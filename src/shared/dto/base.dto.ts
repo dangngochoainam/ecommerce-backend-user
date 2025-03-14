@@ -40,6 +40,7 @@ export class ResponseDTO<T> {
 		public message: string,
 		public systemCode: string,
 		public debugError?: T,
+		public traceId?: string,
 	) {}
 }
 
@@ -57,7 +58,8 @@ export class ResponseErrorDetailDTO<T> extends ResponseDTO<T> {
 		public systemCode: string,
 		public data: T,
 		public debugError?: T,
+		public traceId?: string,
 	) {
-		super(data, message, systemCode, undefined);
+		super(data, message, systemCode, undefined, traceId);
 	}
 }
