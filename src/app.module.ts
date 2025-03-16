@@ -23,6 +23,7 @@ import { UserModule } from "./module/user/user.module";
 import { FetchModule } from "./core/fetch/fetch.module";
 import { CryptoInterceptor } from "./core/crypto/crypto.interceptor";
 import { SetTraceIdInterceptor } from "./core/interceptor/set-trace-id.interceptor";
+import { MutexModule } from "./common-module/redis-mutex/mutex.module";
 
 @Module({
 	imports: [
@@ -117,6 +118,7 @@ import { SetTraceIdInterceptor } from "./core/interceptor/set-trace-id.intercept
 			},
 			inject: [CoreEnvironmentService],
 		}),
+		MutexModule,
 	],
 	controllers: [AppController],
 	providers: [
