@@ -54,12 +54,40 @@ H25G+DSnLUVjU2o0zbM45sX/XvTEvTPKtiA8rqHrAoGBAKtJbIOjfa/ZvMM+/oYv
 scfavrJHVgUyyxwDVG8xagFIxhPj+X5cIMHSFlg4EeFh9LRnKE4QAVCCeXzS1UYQ
 tiOBBtN204UxeHRu/DNAnZac
 -----END PRIVATE KEY----- 
+export DB_TRANSIT_SSL_CA_PATH=./ssl/db_ca.crt 
+export DB_TRANSIT_SSL_CERT_PATH=./ssl/db_client.crt 
+export DB_TRANSIT_SSL_KEY_PATH=./ssl/db_client.key 
+export DB_TRANSIT_ENABLE_LOG=false 
+export DB_TRANSIT_CONNECTION_LIMIT=20 
+export DB_WORKFLOW_SSL_CA_PATH=./ssl/db_ca.crt 
+export DB_WORKFLOW_SSL_CERT_PATH=./ssl/db_client.crt 
+export DB_WORKFLOW_SSL_KEY_PATH=./ssl/db_client.key 
+export DB_WORKFLOW_ENABLE_LOG=false 
+export DB_WORKFLOW_CONNECTION_LIMIT=50 
+export USER_HOST=http://localhost:9000/api/v1 
 export DB_USER_HOST=localhost 
 export DB_USER_PORT=5434 
 export DB_USER_USERNAME=root 
 export DB_USER_PASSWORD=Abc12345 
 export DB_USER_DATABASE=ecommerce 
 export DB_USER_SCHEMA=user 
+export DB_WORKFLOW_HOST=localhost 
+export DB_WORKFLOW_PORT=5434 
+export DB_WORKFLOW_USERNAME=root 
+export DB_WORKFLOW_PASSWORD=Abc12345 
+export DB_WORKFLOW_DATABASE=ecommerce 
+export DB_WORKFLOW_SCHEMA=workflow 
+export DB_WORKFLOW_SSL_ENABLED=undefined 
+export DB_WORKFLOW_SSL_REJECT_UNAUTHORIZED=undefined 
+export DB_TRANSIT_HOST=localhost 
+export DB_TRANSIT_PORT=5434 
+export DB_TRANSIT_USERNAME=root 
+export DB_TRANSIT_PASSWORD=Abc12345 
+export DB_TRANSIT_DATABASE=ecommerce 
+export DB_TRANSIT_SCHEMA=transit 
+export DB_TRANSIT_SSL_ENABLED=undefined 
+export DB_TRANSIT_SSL_REJECT_UNAUTHORIZED=undefined 
+export MICROSERVICES=User_Service 
 export PORT=9000 
 export DB_LOG_HOST=localhost 
 export DB_LOG_PORT=5434 

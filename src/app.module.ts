@@ -7,23 +7,29 @@ import { readFileSync } from "fs";
 import { Redis } from "ioredis";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
+import { CronjobService } from "./common-module/cronjob/cronjob.service";
+import { MutexModule } from "./common-module/redis-mutex/mutex.module";
 import { AuthGatewayModule } from "./core/auth-gateway/auth-gateway.module";
+import { CryptoInterceptor } from "./core/crypto/crypto.interceptor";
 import { CryptoModule } from "./core/crypto/crypto.module";
 import { CoreEnvironment, CoreEnvironmentService } from "./core/environment/environment.service";
 import { CoreEnvironmentModule } from "./core/environment/evironment.module";
+import { FetchModule } from "./core/fetch/fetch.module";
+import { SetTraceIdInterceptor } from "./core/interceptor/set-trace-id.interceptor";
 import { DBLogger } from "./core/logger/db-logger";
 import { LoggerModule, SQL_LOGGER_PROVIDER } from "./core/logger/logger.module";
+import { WorkflowModule } from "./core/workflow/workflow.module";
 import { LogDbModule } from "./db-log/db.module";
 import { SqlLoggerService } from "./db-log/module/sql-logger/sql-logger.service";
+import { DatabaseTransitModule } from "./db-transit/db.module";
+import { WorkflowPayloadModule } from "./db-transit/module/workflow-payload/workflow-payload.module";
 import { typeOrmOptions as exampleTypeOrmOptions } from "./db-user/typeorm.module";
+import { DatabaseWorkflowModule } from "./db-workflow/db.module";
+import { WorkflowCoreSQLModule } from "./db-workflow/module/workflow-core/workflow-core.module";
 import { AuthModule } from "./module/auth/auth.module";
 import { UserEnvironment } from "./module/environment/environment";
 import { UserResponseInterceptor } from "./module/interceptor/response.interceptor";
 import { UserModule } from "./module/user/user.module";
-import { FetchModule } from "./core/fetch/fetch.module";
-import { CryptoInterceptor } from "./core/crypto/crypto.interceptor";
-import { SetTraceIdInterceptor } from "./core/interceptor/set-trace-id.interceptor";
-import { MutexModule } from "./common-module/redis-mutex/mutex.module";
 
 @Module({
 	imports: [
@@ -119,6 +125,13 @@ import { MutexModule } from "./common-module/redis-mutex/mutex.module";
 			inject: [CoreEnvironmentService],
 		}),
 		MutexModule,
+		DatabaseWorkflowModule.forRoot({ name: "USER" }),
+		DatabaseTransitModule.forRoot({ name: "USER" }),
+		WorkflowModule.create({
+			workflowSQLModule: WorkflowCoreSQLModule,
+			workflowPayloadSQLModule: WorkflowPayloadModule,
+		}),
+		CronjobService.createModule(CronjobService, {}),
 	],
 	controllers: [AppController],
 	providers: [
