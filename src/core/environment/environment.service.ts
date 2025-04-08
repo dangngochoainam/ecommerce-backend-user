@@ -8,6 +8,11 @@ import { optionalStringToBoolean, stringToBoolean } from "src/shared/utils/class
 export class CoreEnvironment {
 	@Expose()
 	@IsString()
+	@IsNotEmpty()
+	public MICROSERVICES!: string;
+
+	@Expose()
+	@IsString()
 	@Type(() => String)
 	public NODE_ENV: string = "dev";
 
