@@ -31,7 +31,6 @@ export class CryptoService implements OnApplicationBootstrap {
 	}
 
 	public async decrypt(encryptedData: string, password: string = "password here", type: string): Promise<string> {
-		console.log(password);
 		if (type === "aes") return this.decryptAES(Buffer.from(encryptedData, "base64"), password).toString();
 		if (type === "rsa") return this.decryptRSA(Buffer.from(encryptedData, "base64")).toString();
 		return "";
