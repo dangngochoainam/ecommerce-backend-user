@@ -62,7 +62,7 @@ export class WorkflowHelperService {
 		if (!wfEntity) {
 			this.logger.error(
 				{ traceId: correlationId },
-				`Can not save workflow item. Ignored`,
+				`Can not save workflow item`,
 				new Error("Failed to register workflow item"),
 			);
 		}
@@ -78,12 +78,10 @@ export class WorkflowHelperService {
 	public async optimisticTrigger<K extends AbstractWorkflow>(params: { wfEntity: WorkflowEntity; workflow: K }) {
 		const { wfEntity, workflow } = params;
 		if (wfEntity.status !== WORKFLOW_STATUS.NEW) {
-			this.logger.error(
-				{ traceId: wfEntity.correlationId },
-				`Workflow ${wfEntity.workflowName} is not in NEW status. Ignored`,
-				new Error(`Workflow ${wfEntity.workflowName} is not in NEW status.`),
-			);
-			throw new InternalServerErrorException();
+			const errorMessage = `Workflow ${wfEntity.workflowName} is not in NEW status`;
+			const error = new InternalServerErrorException(errorMessage);
+			this.logger.error({ traceId: wfEntity.correlationId }, errorMessage, error);
+			throw error;
 		}
 
 		await this.runWorkflow({
@@ -100,7 +98,13 @@ export class WorkflowHelperService {
 			correlationId,
 			workflowName,
 			maxAttempt,
-			reset: false,
 		});
+	}
+
+	/**
+	 * Mark workflow items as need to be re-run (after Completed/Failed)
+	 */
+	public async resetWorkflowItems(params: { correlationIds: string[]; workflowName: string }) {
+		return this.workflowSqlService.sqlMarkAsPendingReset(undefined, params);
 	}
 }

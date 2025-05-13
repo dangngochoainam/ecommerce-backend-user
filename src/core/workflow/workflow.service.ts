@@ -88,7 +88,6 @@ export abstract class AbstractWorkflowService<DEF extends AbstractWorkflow> impl
 		});
 	}
 
-	// handle flow of workflow
 	private async execute(msgEvent: IMessageEvent<RootMsg>): Promise<WorkflowEntity | undefined> {
 		const { workflowId, correlationId } = msgEvent.parsedMessage;
 		let wfEntity = await this.workflowSqlService.sqlGetWorkflowByID(undefined, { workflowId });
@@ -212,7 +211,6 @@ export abstract class AbstractWorkflowService<DEF extends AbstractWorkflow> impl
 		return wfEntity as WorkflowEntity;
 	}
 
-	//TODO: Business logic of each wf
 	protected abstract run(): Promise<RUN_RESULT>;
 
 	public static createModule<T extends AbstractWorkflowService<any>>(

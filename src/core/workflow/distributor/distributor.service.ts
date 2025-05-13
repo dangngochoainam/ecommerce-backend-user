@@ -18,6 +18,7 @@ export const DISTRIBUTOR_TOKEN = Symbol("DISTRIBUTOR_TOKEN");
 export class DistributorService<T extends AbstractWorkflowService<any>> implements OnModuleInit, OnModuleDestroy {
 	protected logger!: ContextLogger;
 	private cron?: CronJob;
+	private resetInterval!: IntervalTask;
 
 	public constructor(
 		protected readonly loggerService: LoggerService,
@@ -36,9 +37,28 @@ export class DistributorService<T extends AbstractWorkflowService<any>> implemen
 		if (this.cron) {
 			this.cron.stop();
 		}
+		this.resetInterval.stop();
+	}
+
+	private handleResetWorkflow() {
+		if (this.resetInterval) {
+			this.resetInterval.stop();
+		}
+		this.resetInterval = new IntervalTask(60, async () => {
+			this.logger.log(
+				{
+					traceId: this.workflowService.constructor.name,
+				},
+				"Checking pending reset workflow...",
+			);
+			await this.workflowSQLService.sqlResetCompletedWorkflow(undefined, {
+				workflowName: this.workflowService.DEF.name,
+			});
+		}).start();
 	}
 
 	public async onModuleInit(): Promise<void> {
+		this.handleResetWorkflow();
 		if (this.scheduleConfig instanceof IntervalSchedule) {
 		} else if (this.scheduleConfig instanceof CronSchedule) {
 			if (!this.cron) {
@@ -72,4 +92,26 @@ export class DistributorService<T extends AbstractWorkflowService<any>> implemen
 			wfDEF: this.workflowService.DEF,
 		});
 	};
+}
+
+class IntervalTask {
+	private interval?: NodeJS.Timeout;
+	public constructor(
+		protected readonly intervalInSeconds: number,
+		protected readonly cb: () => void,
+	) {}
+
+	public stop() {
+		if (!this.interval) return;
+		clearInterval(this.interval);
+		this.interval = undefined;
+	}
+
+	public start() {
+		if (this.interval) {
+			this.stop();
+		}
+		this.interval = setInterval(this.cb, this.intervalInSeconds * 1000);
+		return this;
+	}
 }

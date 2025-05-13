@@ -13,4 +13,6 @@ export abstract class AbstractWorkflowEntity {
 	public abstract workflowName: string;
 
 	public abstract finished?: boolean;
+
+	public abstract pendingReset: boolean;
 }
