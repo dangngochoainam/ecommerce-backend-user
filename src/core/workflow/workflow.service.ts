@@ -9,6 +9,7 @@ import { DISTRIBUTOR_TOKEN, DistributorService } from "./distributor/distributor
 import { Schedule } from "./schedule";
 import { WorkflowHelperService } from "./workflow-helper.service";
 import {
+	AbstractWorkflow,
 	CONTINUE,
 	FAIL,
 	FINAL_WORKFLOW_STATUS,
@@ -18,15 +19,15 @@ import {
 	SKIP,
 	WORKFLOW_STATUS,
 } from "./workflow-type";
-
-export abstract class AbstractWorkflow {
-	public abstract address: string;
-	public abstract exchange: string;
-	public abstract name: string;
-}
+import { AbstratMessaging } from "./messaging";
+import { ProducerService } from "../amqp/producer.service";
+import { v4 } from "uuid";
 
 @Injectable()
-export abstract class AbstractWorkflowService<DEF extends AbstractWorkflow> implements OnModuleInit {
+export abstract class AbstractWorkflowService<DEF extends AbstractWorkflow>
+	extends AbstratMessaging<DEF>
+	implements OnModuleInit
+{
 	protected readonly logger!: ContextLogger;
 
 	public abstract readonly schedule: Schedule;
@@ -36,6 +37,7 @@ export abstract class AbstractWorkflowService<DEF extends AbstractWorkflow> impl
 	protected abstract onFinished?: (wfEntity: WorkflowEntity) => Promise<void>;
 
 	public constructor(protected readonly loggerService: LoggerService) {
+		super();
 		this.logger = loggerService.newContextLogger(this.constructor.name);
 	}
 
@@ -46,7 +48,10 @@ export abstract class AbstractWorkflowService<DEF extends AbstractWorkflow> impl
 	private readonly workflowSqlService!: WorkflowCoreSQLService;
 
 	@Inject()
-	private readonly consumerService!: ConsumerService;
+	protected readonly consumerService!: ConsumerService;
+
+	@Inject()
+	protected readonly producerService!: ProducerService;
 
 	@Inject()
 	private readonly mutexService!: MutexService;
@@ -55,37 +60,24 @@ export abstract class AbstractWorkflowService<DEF extends AbstractWorkflow> impl
 		await this.listen();
 	}
 
-	private async listen() {
-		const { source } = await this.consumerService.receiveMessage<RootMsg>({
-			address: {
-				name: this.DEF.address,
-				options: {
-					durable: true,
-				},
-			},
-			exchange: {
-				name: this.DEF.exchange,
-				routingKey: this.DEF.name,
-				fanout: false,
-				options: {
-					durable: true,
-				},
-			},
-			durable: true,
-			concurrentLimit: 1,
-		});
+	protected async onMessage(msg: IMessageEvent<RootMsg>) {
+		const wf = await this.execute(msg);
 
-		source.forEach(async (message) => {
-			try {
-				await this.execute(message);
-			} catch (error) {
-				this.logger.error(
-					{ traceId: message.parsedMessage.correlationId },
-					"Error while executing workflow",
-					error as Error,
-				);
-			}
-		});
+		if (wf && msg.replyTo) {
+			const message: IMessageEvent<any> = {
+				parsedMessage: wf,
+				receiverId: msg.senderId,
+				correlationId: msg.correlationId,
+			};
+			await this.producerService.sendMessage({
+				messageId: v4(),
+				address: msg.replyTo?.address as string,
+				durable: true,
+				traceId: msg.correlationId as string,
+				message: JSON.stringify(message),
+				receiverId: msg.senderId,
+			});
+		}
 	}
 
 	private async execute(msgEvent: IMessageEvent<RootMsg>): Promise<WorkflowEntity | undefined> {

@@ -1,21 +1,44 @@
-import { Injectable, InternalServerErrorException } from "@nestjs/common";
+import { Injectable, InternalServerErrorException, OnModuleInit } from "@nestjs/common";
 import { WorkflowEntity } from "src/db-workflow/entity/workflow.entity";
 import { WorkflowCoreSQLService } from "src/db-workflow/module/workflow-core/workflow-core.service";
-import { v4 } from "uuid";
 import { ProducerService } from "../amqp/producer.service";
 import { ContextLogger, LoggerService } from "../logger/logger.service";
-import { IMessageEvent, RootMsg, WORKFLOW_STATUS } from "./workflow-type";
-import { AbstractWorkflow } from "./workflow.service";
+import { ConsumerService } from "./../amqp/consumer.service";
+import { AbstratMessaging } from "./messaging";
+import { AbstractWorkflow, IMessageEvent, RootMsg, WORKFLOW_STATUS } from "./workflow-type";
+import { delay, filter, firstValueFrom, of, race, take } from "rxjs";
+import { v4 } from "uuid";
+
+class _WorkflowHelperWf extends AbstractWorkflow {
+	public name: string = "WorkflowHelperService";
+	public address: string = `Q-${this.name}`;
+	public exchange: string = `E-${this.name}`;
+	public constructor() {
+		super();
+	}
+}
+
+export const WorkflowHelperWf = new _WorkflowHelperWf();
 
 @Injectable()
-export class WorkflowHelperService {
+export class WorkflowHelperService extends AbstratMessaging<typeof WorkflowHelperWf> implements OnModuleInit {
 	protected readonly logger!: ContextLogger;
 	public constructor(
 		protected readonly loggerService: LoggerService,
-		private readonly producerService: ProducerService,
+		protected readonly producerService: ProducerService,
+		protected readonly consumerService: ConsumerService,
 		private readonly workflowSqlService: WorkflowCoreSQLService,
 	) {
+		super();
 		this.logger = loggerService.newContextLogger(this.constructor.name);
+	}
+
+	public DEF: typeof WorkflowHelperWf = WorkflowHelperWf;
+
+	protected async onMessage(_: IMessageEvent<RootMsg>): Promise<void> {}
+
+	public async onModuleInit() {
+		await this.listen();
 	}
 
 	/**
@@ -25,6 +48,7 @@ export class WorkflowHelperService {
 	public async runWorkflow<T extends AbstractWorkflow>(params: {
 		wfEntity: WorkflowEntity;
 		wfDEF: T;
+		replyTo?: { address: string; id: string };
 	}): Promise<void> {
 		const { wfEntity, wfDEF } = params;
 
@@ -37,21 +61,18 @@ export class WorkflowHelperService {
 
 		const message: IMessageEvent<RootMsg> = {
 			parsedMessage: new RootMsg(params.wfEntity.id, params.wfEntity.correlationId),
+			senderId: params.replyTo?.id,
+			replyTo: params.replyTo,
 		};
 
-		await this.producerService.sendMessage({
-			traceId: wfEntity.correlationId,
-			address: wfDEF.address,
-			message: JSON.stringify(message),
-			messageId: v4(),
-			durable: true,
-		});
+		await this.enqueue(message, { traceId: wfEntity.correlationId, address: wfDEF.address });
 	}
 
 	public async syncRequest<K extends AbstractWorkflow>(params: {
 		correlationId: string;
 		workflow: K;
 		maxAttempt: number;
+		timeoutSeconds?: number;
 	}) {
 		const { correlationId, workflow, maxAttempt } = params;
 		const wfEntity = await this.saveWorkflowItem({
@@ -70,13 +91,19 @@ export class WorkflowHelperService {
 		const status = await this.optimisticTrigger({
 			wfEntity: wfEntity as WorkflowEntity,
 			workflow,
+			timeoutSeconds: params.timeoutSeconds || 0,
 		});
 
-		return status;
+		return status || WORKFLOW_STATUS.PROCESSING;
 	}
 
-	public async optimisticTrigger<K extends AbstractWorkflow>(params: { wfEntity: WorkflowEntity; workflow: K }) {
-		const { wfEntity, workflow } = params;
+	public async optimisticTrigger<K extends AbstractWorkflow>(params: {
+		wfEntity: WorkflowEntity;
+		workflow: K;
+		timeoutSeconds: number;
+	}) {
+		const { wfEntity, workflow, timeoutSeconds } = params;
+		const senderId = v4();
 		if (wfEntity.status !== WORKFLOW_STATUS.NEW) {
 			const errorMessage = `Workflow ${wfEntity.workflowName} is not in NEW status`;
 			const error = new InternalServerErrorException(errorMessage);
@@ -84,12 +111,40 @@ export class WorkflowHelperService {
 			throw error;
 		}
 
+		const res = this.source
+			? firstValueFrom(
+					race(
+						this.source.pipe(
+							filter((msgEvent) => {
+								if (msgEvent.receiverId) {
+									this.logger.log(
+										{
+											traceId: wfEntity.correlationId,
+										},
+										`Sender ${msgEvent.receiverId} got replied message`,
+									);
+									return msgEvent.receiverId === senderId;
+								}
+								return false;
+							}),
+							take(1),
+						),
+						of(undefined).pipe(delay(timeoutSeconds * 1000)),
+					),
+				)
+			: undefined;
+
 		await this.runWorkflow({
 			wfEntity,
 			wfDEF: workflow,
+			replyTo: { address: this.DEF.address, id: senderId },
 		});
 
-		return WORKFLOW_STATUS.PROCESSING;
+		const msg = res ? await res : undefined;
+
+		this.logger.debug({}, msg?.parsedMessage.status);
+
+		return msg?.parsedMessage.status || WORKFLOW_STATUS.PROCESSING;
 	}
 
 	public async saveWorkflowItem(params: { correlationId: string; workflowName: string; maxAttempt: number }) {

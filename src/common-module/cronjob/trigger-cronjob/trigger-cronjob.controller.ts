@@ -14,6 +14,7 @@ export class TriggerConjobController {
 			maxAttempt: 5,
 			workflow: CronjobWf,
 			correlationId: body.correlationId,
+			timeoutSeconds: 10,
 		});
 	}
 }
