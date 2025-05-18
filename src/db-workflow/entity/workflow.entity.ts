@@ -29,8 +29,11 @@ export class WorkflowEntity extends BaseEntity implements AbstractWorkflowEntity
 	@Column({ name: "current_attempt" })
 	public currentAttempt!: number;
 
-	@Column({ name: "finished", type: "boolean" })
+	@Column({ name: "finished", type: "boolean", default: false })
 	public finished!: boolean;
+
+	@Column({ name: "pending_reset", type: "boolean", default: false })
+	public pendingReset!: boolean;
 
 	@Column({ name: "status" })
 	public status!: WORKFLOW_STATUS;

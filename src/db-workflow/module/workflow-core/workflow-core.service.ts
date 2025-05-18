@@ -6,6 +6,7 @@ import { WorkflowEntity } from "src/db-workflow/entity/workflow.entity";
 import { FINAL_WORKFLOW_STATUS, WORKFLOW_STATUS } from "src/core/workflow/workflow-type";
 import { EntityManager, In, Not } from "typeorm";
 import { DATA_PLANE_CONNECTION_NAME } from "../../typeorm.module";
+import { InternalServerErrorException } from "@nestjs/common";
 
 export class WorkflowCoreSQLService extends AbstractSQLService {
 	public constructor(
@@ -47,6 +48,59 @@ export class WorkflowCoreSQLService extends AbstractSQLService {
 				status: Not(In(FINAL_WORKFLOW_STATUS)),
 			},
 		});
+	}
+
+	public async sqlMarkAsPendingReset(
+		m: EntityManager | undefined = this.defaultManager,
+		params: {
+			correlationIds: string[];
+			workflowName: string;
+		},
+	) {
+		return await m.getRepository(WorkflowEntity).update(
+			{
+				correlationId: In(params.correlationIds),
+				workflowName: params.workflowName,
+			},
+			{
+				pendingReset: true,
+			},
+		);
+	}
+
+	public async sqlResetCompletedWorkflow(
+		m: EntityManager | undefined = this.defaultManager,
+		params: {
+			workflowName: string;
+			correlationId?: string;
+			maxAttempt?: number;
+		},
+	) {
+		return m.getRepository(WorkflowEntity).update(
+			{
+				workflowName: params.workflowName,
+				status: In(FINAL_WORKFLOW_STATUS),
+				...(params.correlationId
+					? {
+							correlationId: params.correlationId,
+						}
+					: {
+							pendingReset: true,
+						}),
+			},
+			{
+				pendingReset: false,
+				currentAttempt: 0,
+				status: WORKFLOW_STATUS.NEW,
+				finished: false,
+				cycle: () => "cycle + 1",
+				...(params.maxAttempt
+					? {
+							maxAttempt: params.maxAttempt,
+						}
+					: {}),
+			},
+		);
 	}
 
 	public async sqlGetWorkflowByCorrelationId(
@@ -98,40 +152,34 @@ export class WorkflowCoreSQLService extends AbstractSQLService {
 
 	public async sqlNewWorkflowItem(
 		m: EntityManager | undefined = this.defaultManager,
-		params: Pick<WorkflowEntity, "correlationId" | "workflowName" | "maxAttempt"> & {
-			reset?: boolean;
-		},
+		params: Pick<WorkflowEntity, "correlationId" | "workflowName" | "maxAttempt">,
 	) {
 		return this.mergeTransaction(m, async (transactionManager) => {
 			const repo = transactionManager.getRepository(WorkflowEntity);
-			const p = mirrorAndFilter(params, undefined, ["reset"]);
+			const p = mirrorAndFilter(params, undefined, []);
+			const correlationId = params.correlationId as string;
+
 			const existing = await repo.findOne({
 				where: {
-					correlationId: params.correlationId as string,
+					correlationId,
 					workflowName: params.workflowName,
 				},
 			});
-			if (existing && params.reset) {
-				await repo.update(
-					{
-						correlationId: params.correlationId as string,
-						workflowName: params.workflowName,
-					},
-					{
-						...p,
-						currentAttempt: 0,
-						status: WORKFLOW_STATUS.NEW,
-						finished: false,
-						cycle: () => "cycle + 1",
-					},
-				);
-				return repo.findOne({
+			if (existing) {
+				if (!FINAL_WORKFLOW_STATUS.includes(existing.status)) {
+					throw new InternalServerErrorException("Workflow already processing");
+				}
+				await this.sqlResetCompletedWorkflow(m, {
+					workflowName: existing.workflowName,
+					correlationId: existing.correlationId,
+				});
+				return m.getRepository(WorkflowEntity).findOne({
 					where: {
-						correlationId: params.correlationId as string,
-						workflowName: params.workflowName,
+						correlationId,
 					},
 				});
 			}
+
 			const res = await m.getRepository(WorkflowEntity).insert({
 				...p,
 				serviceName: this.envService.ENVIRONMENT.MICROSERVICES,
@@ -143,7 +191,7 @@ export class WorkflowCoreSQLService extends AbstractSQLService {
 			});
 			return m.getRepository(WorkflowEntity).findOne({
 				where: {
-					id: res.identifiers[0].id as string,
+					id: res.identifiers[0].id,
 				},
 			});
 		});

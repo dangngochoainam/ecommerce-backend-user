@@ -1,4 +1,4 @@
-import { AbstractWorkflow } from "src/core/workflow/workflow.service";
+import { AbstractWorkflow } from "src/core/workflow/workflow-type";
 
 class _CronjobWf extends AbstractWorkflow {
 	public name: string = "CronjobService";

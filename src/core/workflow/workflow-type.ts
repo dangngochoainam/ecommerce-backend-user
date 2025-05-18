@@ -41,6 +41,7 @@ export interface IMessageEvent<T> {
 	parsedMessage: T;
 	msg?: any;
 	senderId?: string;
+	replyTo?: { address: string };
 	receiverId?: string;
 	correlationId?: string;
 }
@@ -52,4 +53,10 @@ export class RootMsg {
 		this.correlationId = correlationId;
 		this.workflowId = workflowId;
 	}
+}
+
+export abstract class AbstractWorkflow {
+	public abstract address: string;
+	public abstract exchange: string;
+	public abstract name: string;
 }

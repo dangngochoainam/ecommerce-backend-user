@@ -10,10 +10,11 @@ export class TriggerConjobController {
 	@NON_ENCRYPTION
 	@Post("workflow/trigger-cronjob")
 	public async triggerCronjob(@Body() body: { correlationId: string }) {
-		return await this.workflowHelperService.syncRequest<typeof CronjobWf>({
+		return this.workflowHelperService.syncRequest<typeof CronjobWf>({
 			maxAttempt: 5,
 			workflow: CronjobWf,
 			correlationId: body.correlationId,
+			timeoutSeconds: 10,
 		});
 	}
 }
