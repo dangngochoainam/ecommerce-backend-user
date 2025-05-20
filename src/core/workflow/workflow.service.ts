@@ -182,11 +182,11 @@ export abstract class AbstractWorkflowService<DEF extends AbstractWorkflow>
 				status,
 			});
 
+			status && (wfEntity.status = status);
 			// Execute finish hook if exist
 			if (FINAL_WORKFLOW_STATUS.includes(status as WORKFLOW_STATUS)) {
 				await (this.onFinished && this.onFinished(wfEntity));
 			}
-			status && (wfEntity.status = status);
 			return wfEntity;
 		} catch (error) {
 			this.logger.error(
