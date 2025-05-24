@@ -9,7 +9,7 @@ import { AbstractWorkflow, IMessageEvent, RootMsg, WORKFLOW_STATUS } from "./wor
 import { delay, filter, firstValueFrom, of, race, take } from "rxjs";
 import { v4 } from "uuid";
 
-class _WorkflowHelperWf extends AbstractWorkflow {
+class _WorkflowHelperWf extends AbstractWorkflow<string> {
 	public name: string = "WorkflowHelperService";
 	public address: string = `Q-${this.name}`;
 	public exchange: string = `E-${this.name}`;
@@ -45,7 +45,7 @@ export class WorkflowHelperService extends AbstratMessaging<typeof WorkflowHelpe
 	 * Trigger a workflow service to run its operations
 	 * How it's run is up to the workflow service
 	 */
-	public async runWorkflow<T extends AbstractWorkflow>(params: {
+	public async runWorkflow<T extends AbstractWorkflow<string>>(params: {
 		wfEntity: WorkflowEntity;
 		wfDEF: T;
 		replyTo?: { address: string; id: string };
@@ -68,7 +68,7 @@ export class WorkflowHelperService extends AbstratMessaging<typeof WorkflowHelpe
 		await this.enqueue(message, { traceId: wfEntity.correlationId, address: wfDEF.address });
 	}
 
-	public async syncRequest<K extends AbstractWorkflow>(params: {
+	public async syncRequest<K extends AbstractWorkflow<string>>(params: {
 		correlationId: string;
 		workflow: K;
 		maxAttempt: number;
@@ -97,7 +97,7 @@ export class WorkflowHelperService extends AbstratMessaging<typeof WorkflowHelpe
 		return status || WORKFLOW_STATUS.PROCESSING;
 	}
 
-	public async optimisticTrigger<K extends AbstractWorkflow>(params: {
+	public async optimisticTrigger<K extends AbstractWorkflow<string>>(params: {
 		wfEntity: WorkflowEntity;
 		workflow: K;
 		timeoutSeconds: number;
