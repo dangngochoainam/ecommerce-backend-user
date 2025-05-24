@@ -10,10 +10,12 @@ import { Schedule } from "./schedule";
 import { WorkflowHelperService } from "./workflow-helper.service";
 import {
 	AbstractWorkflow,
+	Assertion,
 	CONTINUE,
 	FAIL,
 	FINAL_WORKFLOW_STATUS,
 	IMessageEvent,
+	Operation,
 	RootMsg,
 	RUN_RESULT,
 	SKIP,
@@ -22,13 +24,14 @@ import {
 import { AbstratMessaging } from "./messaging";
 import { ProducerService } from "../amqp/producer.service";
 import { v4 } from "uuid";
+import { Executor } from "./workflow-common";
 
 @Injectable()
-export abstract class AbstractWorkflowService<DEF extends AbstractWorkflow>
+export abstract class AbstractWorkflowService<DEF extends AbstractWorkflow<string>>
 	extends AbstratMessaging<DEF>
 	implements OnModuleInit
 {
-	protected readonly logger!: ContextLogger;
+	public readonly logger!: ContextLogger;
 
 	public abstract readonly schedule: Schedule;
 
@@ -55,6 +58,10 @@ export abstract class AbstractWorkflowService<DEF extends AbstractWorkflow>
 
 	@Inject()
 	private readonly mutexService!: MutexService;
+
+	public abstract _assert: Assertion<AbstractWorkflowService<DEF>>;
+
+	public abstract _operations: Operation<DEF["step"]>;
 
 	public async onModuleInit(): Promise<void> {
 		await this.listen();
@@ -110,8 +117,9 @@ export abstract class AbstractWorkflowService<DEF extends AbstractWorkflow>
 			let runStatus = undefined;
 			let isSkipThisRun: boolean = false;
 			const startTime = new Date();
+			const executor = new Executor(this, wfEntity);
 			try {
-				const runResult = await this.run();
+				const runResult = await this.run(executor);
 				const duration = (new Date().getTime() - startTime.getTime()) / 1000;
 				this.logger.debug(
 					{
@@ -182,11 +190,11 @@ export abstract class AbstractWorkflowService<DEF extends AbstractWorkflow>
 				status,
 			});
 
+			status && (wfEntity.status = status);
 			// Execute finish hook if exist
 			if (FINAL_WORKFLOW_STATUS.includes(status as WORKFLOW_STATUS)) {
 				await (this.onFinished && this.onFinished(wfEntity));
 			}
-			status && (wfEntity.status = status);
 			return wfEntity;
 		} catch (error) {
 			this.logger.error(
@@ -203,7 +211,7 @@ export abstract class AbstractWorkflowService<DEF extends AbstractWorkflow>
 		return wfEntity as WorkflowEntity;
 	}
 
-	protected abstract run(): Promise<RUN_RESULT>;
+	protected abstract run(executor: Executor<any>): Promise<RUN_RESULT>;
 
 	public static createModule<T extends AbstractWorkflowService<any>>(
 		service: Type<T>,

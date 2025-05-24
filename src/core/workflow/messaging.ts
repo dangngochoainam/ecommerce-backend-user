@@ -5,7 +5,7 @@ import { AbstractWorkflow, IMessageEvent, RootMsg } from "./workflow-type";
 import { v4 } from "uuid";
 import { ProducerService } from "../amqp/producer.service";
 
-export abstract class AbstratMessaging<DEF extends AbstractWorkflow> {
+export abstract class AbstratMessaging<DEF extends AbstractWorkflow<string>> {
 	protected abstract logger: ContextLogger;
 
 	protected abstract consumerService: ConsumerService;
