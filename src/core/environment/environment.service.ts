@@ -2,6 +2,7 @@ import { Injectable, Logger, ValueProvider } from "@nestjs/common";
 import { Exclude, Expose, plainToClass, Transform, Type } from "class-transformer";
 import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString, validateSync } from "class-validator";
 import { createWriteStream } from "fs";
+import { hostname } from "os";
 import { optionalStringToBoolean, stringToBoolean } from "src/shared/utils/class-transformer";
 
 @Exclude()
@@ -26,10 +27,10 @@ export class CoreEnvironment {
 	@Transform(optionalStringToBoolean)
 	public SHOW_DEBUG_ERROR: boolean = false;
 
-	@Expose()
 	@IsString()
-	@Type(() => String)
-	public INSTANCE_ID: string = "unset instanceId";
+	public get INSTANCE_ID(): string {
+		return this.MICROSERVICES + "-" + Buffer.from(hostname()).toString("base64").slice(0, 6);
+	}
 
 	@Expose()
 	@IsNumber()
